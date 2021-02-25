@@ -1,9 +1,7 @@
 <?php
-if (! defined('ABSPATH')) {
-	exit;
-}
+defined('ABSPATH') || exit;
 
-class Plugin_Name_Settings {
+class My_Plugin_Settings {
 
 	/**
 	 * Initialize class.
@@ -20,7 +18,7 @@ class Plugin_Name_Settings {
 	}
 
 	/**
-	 * Adds settings page and fields.
+	 * Adds ACF options page and fields.
 	 *
 	 * @access public
 	 * @since 1.0.0
@@ -61,4 +59,4 @@ class Plugin_Name_Settings {
 	}
 }
 
-$plugin_settings_page = new Plugin_Name_Settings();
+new My_Plugin_Settings();

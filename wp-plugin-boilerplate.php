@@ -1,6 +1,7 @@
 <?php
+defined('ABSPATH') || exit;
 /*
-	Plugin Name:
+	Plugin Name: My Plugin
 	Plugin URI:
 	Description:
 	Version: 1.0.0
@@ -8,22 +9,23 @@
 	Requires PHP: 7.0
 	Author: Vital
 	Author URI: https://vtldesign.com
-	Text Domain: vital
+	Text Domain: my-plugin
 */
 
-if (! defined('ABSPATH')) {
-	exit;
-}
+register_activation_hook(__FILE__, ['My_Plugin', 'activate']);
+register_deactivation_hook(__FILE__, ['My_Plugin', 'deactivate']);
 
-class Plugin_Name {
+add_action('plugins_loaded', ['My_Plugin', 'init']);
+
+class My_Plugin {
 
 	/**
-	 * The plugin version number.
-	 * @var    string
-	 * @access public
+	 * The class instance.
+	 * @var    object
+	 * @access private
 	 * @since  1.0.0
 	 */
-	public $version;
+	protected static $instance;
 
 	/**
 	 * The main plugin directory path.
@@ -44,6 +46,14 @@ class Plugin_Name {
 	private $plugin_url;
 
 	/**
+	 * The plugin version number.
+	 * @var    string
+	 * @access public
+	 * @since  1.0.0
+	 */
+	public $version;
+
+	/**
 	 * The plugin prefix.
 	 *
 	 * @var    string
@@ -53,6 +63,18 @@ class Plugin_Name {
 	private $prefix;
 
 	/**
+	 * Initialize class.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return void
+	 */
+	public static function init() {
+		is_null(self::$instance) && self::$instance = new self;
+		return self::$instance;
+	}
+
+	/**
 	 * Initialize plugin.
 	 *
 	 * @access public
@@ -60,16 +82,12 @@ class Plugin_Name {
 	 * @return void
 	 */
 	public function __construct() {
-
-		$this->version = '1.0.0';
 		$this->plugin_path = plugin_dir_path(__FILE__);
 		$this->plugin_url = plugin_dir_url(__FILE__);
-		$this->prefix = 'plugin_boilerplate';
+		$this->version = '1.0.0';
+		$this->prefix = 'my_plugin';
 
 		require $this->plugin_path . 'admin.php';
-
-		register_activation_hook($this->plugin_path, [$this, 'activate']);
-		register_deactivation_hook($this->plugin_path, [$this, 'deactivate']);
 
 		add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
 		add_action('wp_enqueue_scripts', [$this, 'enqueue_styles']);
@@ -79,44 +97,7 @@ class Plugin_Name {
 	}
 
 	/**
-	 * Add link to settings on Plugins page.
-	 *
-	 * @access private
-	 * @since  1.0.0
-	 * @return array The array of action links.
-	 */
-	public function add_action_link($links) {
-		$custom_link = [
-			'<a href="' . admin_url('options-general.php?page=PLUGIN_SETTINGS_PAGE') . '">Settings</a>',
-		];
-
-		return array_merge($custom_link, $links);
-	}
-
-
-	/**
-	 * Runs plugin activation tasks.
-	 *
-	 * @access public
-	 * @since  1.0.0
-	 * @return void
-	 */
-	public function activate() {
-	}
-
-	/**
-	 * Runs plugin deactivation tasks.
-	 * Use uninstall.php for tasks that should only happen on uninstall.
-	 *
-	 * @access public
-	 * @since  1.0.0
-	 * @return void
-	 */
-	public function deactivate() {
-	}
-
-	/**
-	 * Enqueue JavaScripts
+	 * Enqueue JavaScripts.
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -124,17 +105,18 @@ class Plugin_Name {
 	 */
 	public function enqueue_scripts() {
 
-		wp_enqueue_script(
-			"{$this->prefix}_js",
-			$this->plugin_url . '/js/main.js',
-			['jquery'],
-			$this->version,
-			true
-		);
+		// EXAMPLE
+		// wp_enqueue_script(
+		// 	"{$this->prefix}_js",
+		// 	$this->plugin_url . '/js/main.js',
+		// 	['jquery'],
+		// 	$this->version,
+		// 	true
+		// );
 	}
 
 	/**
-	 * Enqueue stylesheets
+	 * Enqueue stylesheets.
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -144,7 +126,7 @@ class Plugin_Name {
 	}
 
 	/**
-	 * Enqueue admin JavaScripts
+	 * Enqueue admin JavaScripts.
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -154,7 +136,7 @@ class Plugin_Name {
 	}
 
 	/**
-	 * Enqueue admin stylesheets
+	 * Enqueue admin stylesheets.
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -162,6 +144,51 @@ class Plugin_Name {
 	 */
 	public function enqueue_admin_styles() {
 	}
-}
 
-new Plugin_Name();
+	/**
+	 * Adds link to settings on Plugins page.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return array The array of action links.
+	 */
+	public function add_action_link($links) {
+		$custom_link = [
+			'<a href="' . admin_url('options-general.php?page=MY_PLUGIN_SETTINGS_PAGE') . '">Settings</a>',
+		];
+
+		return array_merge($custom_link, $links);
+	}
+
+	/**
+	 * Runs plugin activation tasks.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return void
+	 */
+	public static function activate() {
+		if (!current_user_can('activate_plugins')) {
+			return;
+		}
+
+		$plugin = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
+		check_admin_referer("activate-plugin_{$plugin}");
+	}
+
+	/**
+	 * Runs plugin deactivation tasks.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return void
+	 */
+	public static function deactivate() {
+		if (!current_user_can('activate_plugins')) {
+			return;
+		}
+
+		$plugin = isset($_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : '';
+		check_admin_referer("deactivate-plugin_{$plugin}");
+	}
+}

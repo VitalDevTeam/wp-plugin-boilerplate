@@ -1,9 +1,15 @@
 <?php
-if (! defined('ABSPATH')) {
-	exit;
-}
+defined('ABSPATH') || exit;
 
-class Plugin_Settings_Page {
+class My_Plugin_Settings_Page {
+
+	/**
+	 * The plugin version number.
+	 * @var    string
+	 * @access public
+	 * @since  1.0.0
+	 */
+	public $version;
 
 	/**
 	 * The plugin prefix.
@@ -33,8 +39,8 @@ class Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function __construct() {
-
-		$this->prefix = 'plugin_boilerplate';
+		$this->version = '1.0.0';
+		$this->prefix = 'my_plugin';
 
 		add_action('admin_menu', [$this, 'add_plugin_page'], 100);
 		add_action('admin_init', [$this, 'page_init']);
@@ -143,7 +149,7 @@ class Plugin_Settings_Page {
 			'My Setting',
 			// Function that fills the field with the desired inputs
 			// as part of the larger form
-			[$this, 'foo_callback'],
+			[$this, 'my_setting_callback'],
 			// The menu page on which to display this field
 			$this->prefix,
 			// The section of the settings page in which to show the box
@@ -187,7 +193,7 @@ class Plugin_Settings_Page {
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function foo_callback() {
+	public function my_setting_callback() {
 
 		if (isset($this->options['my_setting'])) {
 			$my_setting = esc_attr($this->options['my_setting']);
@@ -203,5 +209,5 @@ class Plugin_Settings_Page {
 }
 
 if (is_admin()) {
-	$plugin_settings_page = new Plugin_Settings_Page();
+	new My_Plugin_Settings_Page();
 }

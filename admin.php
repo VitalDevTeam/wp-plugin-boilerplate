@@ -12,6 +12,24 @@ class My_Plugin_Settings_Page {
 	public $version;
 
 	/**
+	 * The main plugin directory path.
+	 *
+	 * @var    string
+	 * @access private
+	 * @since  1.0.0
+	 */
+	private $plugin_path;
+
+	/**
+	 * The main plugin directory URL.
+	 *
+	 * @var    string
+	 * @access private
+	 * @since  1.0.0
+	 */
+	private $plugin_url;
+
+	/**
 	 * The plugin prefix.
 	 *
 	 * @var    string
@@ -39,11 +57,24 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function __construct() {
+		$this->plugin_path = plugin_dir_path(__FILE__);
+		$this->plugin_url = plugin_dir_url(__FILE__);
 		$this->version = '1.0.0';
 		$this->prefix = 'my_plugin';
 
 		add_action('admin_menu', [$this, 'add_plugin_page'], 100);
 		add_action('admin_init', [$this, 'page_init']);
+	}
+
+	/**
+	 * Enqueue admin styles and scripts.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return void
+	 */
+	public function enqueuer() {
+		// wp_enqueue_script('my_plugin_script');
 	}
 
 	/**
@@ -56,7 +87,7 @@ class My_Plugin_Settings_Page {
 	 */
 	public function add_plugin_page() {
 
-		add_submenu_page(
+		$page = add_submenu_page(
 			// The slug name for the parent menu (or the file name
 			// of a standard WordPress admin page)
 			'options-general.php',
@@ -71,6 +102,9 @@ class My_Plugin_Settings_Page {
 			// Callback that renders page
 			[$this, 'page_render']
 		);
+
+		// Adds hook so our enqueued files load only on this page.
+		add_action('admin_print_scripts-' . $page, [$this, 'enqueuer']);
 	}
 
 	/**
@@ -110,6 +144,16 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function page_init() {
+
+		/**
+		 * Registers script for loading on this settings page.
+		 */
+		// wp_register_script(
+		// 	'my_plugin_script',
+		// 	$this->plugin_url . 'assets/my-plugin.js',
+		// 	['jquery'],
+		// 	$this->version
+		// );
 
 		/**
 		 * Registers a setting and its sanitization callback.

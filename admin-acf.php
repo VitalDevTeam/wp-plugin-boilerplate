@@ -12,9 +12,7 @@ class My_Plugin_Settings {
 	 */
 	public function __construct() {
 
-		if (function_exists('acf')) {
-			add_action('init', [$this, 'settings']);
-		}
+		add_action('acf/init', [$this, 'settings']);
 	}
 
 	/**

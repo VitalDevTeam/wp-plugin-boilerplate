@@ -8,12 +8,13 @@ Find and replace each placeholder, matching case:
 
 | Placeholder | Where | Replace with |
 | --- | --- | --- |
-| `wp-plugin-boilerplate` | Plugin folder and main file name | Your plugin slug, e.g. `acme-events` |
+| `wp-plugin-boilerplate` | Plugin folder, main file name, `Text Domain:` header, and the text domain in every `__()`/`esc_html__()` call | Your plugin slug, e.g. `acme-events`. The text domain must match the folder name or WordPress won't auto-load translations. |
 | `Plugin Boilerplate` | `Plugin Name:` header | Your plugin's display name |
-| `my-plugin` | `Text Domain:` header, all `__()`/`esc_html__()` calls | Your plugin slug. It must match the folder name or WordPress won't auto-load translations. |
 | `MY_PLUGIN_` | Constants in the main file and `admin.php` | e.g. `ACME_EVENTS_` |
 | `My_Plugin_` | Class name in `admin.php` | e.g. `Acme_Events_` |
 | `my_plugin` | `$prefix` in `admin.php`, option name in `uninstall.php` | e.g. `acme_events` |
+
+Skipping a row breaks things. Two plugins with the same constants or class can't both load, and two plugins with the same option name share settings, so uninstalling one deletes the other's.
 
 Then:
 

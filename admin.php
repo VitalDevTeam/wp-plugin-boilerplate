@@ -13,6 +13,15 @@ class My_Plugin_Settings_Page {
 	private $prefix = 'my_plugin';
 
 	/**
+	 * Capability needed to view the page and save its settings.
+	 *
+	 * @var    string
+	 * @access private
+	 * @since  1.0.0
+	 */
+	private $capability = 'manage_options';
+
+	/**
 	 * The settings page hook suffix, returned by add_submenu_page().
 	 *
 	 * @var    string|false
@@ -29,9 +38,16 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function __construct() {
+		// Registered on init, not admin_init, so the sanitize callback and
+		// default apply to every update_option() and get_option() call,
+		// including cron, REST, WP-CLI, and front-end requests.
+		add_action('init', [$this, 'register_settings']);
 		add_action('admin_menu', [$this, 'add_plugin_page'], 100);
 		add_action('admin_init', [$this, 'page_init']);
 		add_action('admin_enqueue_scripts', [$this, 'enqueuer']);
+
+		// options.php checks this filter, not the page capability, before saving.
+		add_filter("option_page_capability_{$this->prefix}_options_group", [$this, 'get_capability']);
 	}
 
 	/**
@@ -45,7 +61,7 @@ class My_Plugin_Settings_Page {
 	public function enqueuer($hook_suffix) {
 
 		// Only load our files on this settings page.
-		if (!$this->page_hook || $hook_suffix !== $this->page_hook) {
+		if ($hook_suffix !== $this->page_hook) {
 			return;
 		}
 
@@ -68,7 +84,9 @@ class My_Plugin_Settings_Page {
 	/**
 	 * Adds options subpage to Settings.
 	 * add_options_page() is a shortcut for this exact call.
-	 * You can add top-level pages using add_menu_page().
+	 * You can add top-level pages using add_menu_page(). If you do,
+	 * call settings_errors() at the top of page_render(). WordPress only
+	 * prints save notices automatically for pages under Settings.
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -81,11 +99,11 @@ class My_Plugin_Settings_Page {
 			// of a standard WordPress admin page)
 			'options-general.php',
 			// Page Title
-			__('Plugin Settings', 'my-plugin'),
+			__('Plugin Settings', 'wp-plugin-boilerplate'),
 			// Menu Title
-			__('Plugin Settings', 'my-plugin'),
+			__('Plugin Settings', 'wp-plugin-boilerplate'),
 			// Capability needed to access this page
-			'manage_options',
+			$this->capability,
 			// Menu Slug - Used by WP to identify this page
 			$this->prefix,
 			// Callback that renders page
@@ -114,7 +132,7 @@ class My_Plugin_Settings_Page {
 				// This should match the page name used in add_settings_section().
 				do_settings_sections($this->prefix);
 				// Submit button
-				submit_button(__('Save', 'my-plugin'));
+				submit_button(__('Save', 'wp-plugin-boilerplate'));
 			?>
 			</form>
 		</div>
@@ -122,13 +140,24 @@ class My_Plugin_Settings_Page {
 	}
 
 	/**
-	 * Initializes options page, registers and adds settings.
+	 * Returns the capability needed to save the settings.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return string
+	 */
+	public function get_capability() {
+		return $this->capability;
+	}
+
+	/**
+	 * Registers settings.
 	 *
 	 * @access public
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function page_init() {
+	public function register_settings() {
 
 		/**
 		 * Registers a setting and its sanitization callback.
@@ -148,6 +177,16 @@ class My_Plugin_Settings_Page {
 				'show_in_rest'      => false,
 			]
 		);
+	}
+
+	/**
+	 * Initializes options page, adds sections and fields.
+	 *
+	 * @access public
+	 * @since  1.0.0
+	 * @return void
+	 */
+	public function page_init() {
 
 		/**
 		 * Adds a section of settings.
@@ -157,7 +196,7 @@ class My_Plugin_Settings_Page {
 			// String for use in the 'id' attribute of tags
 			'plugin_settings_section_1',
 			// Title of the section
-			__('Plugin Settings Section 1', 'my-plugin'),
+			__('Plugin Settings Section 1', 'wp-plugin-boilerplate'),
 			// Function that renders the section with content
 			[$this, 'print_section_1_info'],
 			// The menu page on which to display this section
@@ -171,7 +210,7 @@ class My_Plugin_Settings_Page {
 			// String for use in the 'id' attribute of tags
 			'my_setting',
 			// Title of the field
-			__('My Setting', 'my-plugin'),
+			__('My Setting', 'wp-plugin-boilerplate'),
 			// Function that fills the field with the desired inputs
 			// as part of the larger form
 			[$this, 'my_setting_callback'],
@@ -210,7 +249,7 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function print_section_1_info() {
-		echo '<p>' . esc_html__('This is description text for the section 1.', 'my-plugin') . '</p>';
+		echo '<p>' . esc_html__('This is description text for the section 1.', 'wp-plugin-boilerplate') . '</p>';
 	}
 
 	/**
@@ -223,6 +262,11 @@ class My_Plugin_Settings_Page {
 	public function my_setting_callback() {
 		$options = get_option("{$this->prefix}_option");
 		$my_setting = $options['my_setting'] ?? '';
+
+		// Stored data isn't guaranteed to have passed through sanitize().
+		if (!is_string($my_setting)) {
+			$my_setting = '';
+		}
 		?>
 		<input
 			type="text"
@@ -230,13 +274,12 @@ class My_Plugin_Settings_Page {
 			id="my_setting"
 			name="<?php echo esc_attr("{$this->prefix}_option[my_setting]"); ?>"
 			value="<?php echo esc_attr($my_setting); ?>"
-			placeholder="<?php esc_attr_e('Enter setting value', 'my-plugin'); ?>"
+			placeholder="<?php esc_attr_e('Enter setting value', 'wp-plugin-boilerplate'); ?>"
 		/>
-		<p class="description"><?php esc_html_e('A description for the field (optional).', 'my-plugin'); ?></p>
+		<p class="description"><?php esc_html_e('A description for the field (optional).', 'wp-plugin-boilerplate'); ?></p>
 		<?php
 	}
 }
 
-if (is_admin()) {
-	new My_Plugin_Settings_Page();
-}
+// Not wrapped in is_admin(): the setting is registered on every request.
+new My_Plugin_Settings_Page();

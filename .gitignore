@@ -15,6 +15,12 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
+# Ignore secrets and credentials
+.env
+.env.*
+!.env.example
+auth.json
+
 # Ignore log files and databases
 *.log
 *.sql

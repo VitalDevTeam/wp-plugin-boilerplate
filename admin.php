@@ -4,50 +4,22 @@ defined('ABSPATH') || exit;
 class My_Plugin_Settings_Page {
 
 	/**
-	 * The plugin version number.
-	 * @var    string
-	 * @access public
-	 * @since  1.0.0
-	 */
-	public $version;
-
-	/**
-	 * The main plugin directory path.
-	 *
-	 * @var    string
-	 * @access private
-	 * @since  1.0.0
-	 */
-	private $plugin_path;
-
-	/**
-	 * The main plugin directory URL.
-	 *
-	 * @var    string
-	 * @access private
-	 * @since  1.0.0
-	 */
-	private $plugin_url;
-
-	/**
 	 * The plugin prefix.
 	 *
 	 * @var    string
 	 * @access private
 	 * @since  1.0.0
 	 */
-	private $prefix;
+	private $prefix = 'my_plugin';
 
 	/**
-	 * The plugin options.
-	 * Used in field callbacks.
+	 * The settings page hook suffix, returned by add_submenu_page().
 	 *
-	 * @var    string
+	 * @var    string|false
 	 * @access private
 	 * @since  1.0.0
-	 * @return mixed
 	 */
-	private $options;
+	private $page_hook = false;
 
 	/**
 	 * Initialize class.
@@ -57,13 +29,9 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function __construct() {
-		$this->plugin_path = plugin_dir_path(__FILE__);
-		$this->plugin_url = plugin_dir_url(__FILE__);
-		$this->version = '1.0.0';
-		$this->prefix = 'my_plugin';
-
 		add_action('admin_menu', [$this, 'add_plugin_page'], 100);
 		add_action('admin_init', [$this, 'page_init']);
+		add_action('admin_enqueue_scripts', [$this, 'enqueuer']);
 	}
 
 	/**
@@ -71,15 +39,36 @@ class My_Plugin_Settings_Page {
 	 *
 	 * @access public
 	 * @since  1.0.0
+	 * @param  string $hook_suffix The current admin page.
 	 * @return void
 	 */
-	public function enqueuer() {
-		// wp_enqueue_script('my_plugin_script');
+	public function enqueuer($hook_suffix) {
+
+		// Only load our files on this settings page.
+		if (!$this->page_hook || $hook_suffix !== $this->page_hook) {
+			return;
+		}
+
+		// wp_enqueue_style(
+		// 	'my_plugin_style',
+		// 	MY_PLUGIN_URL . 'assets/my-plugin.css',
+		// 	[],
+		// 	MY_PLUGIN_VERSION
+		// );
+
+		// wp_enqueue_script(
+		// 	'my_plugin_script',
+		// 	MY_PLUGIN_URL . 'assets/my-plugin.js',
+		// 	[],
+		// 	MY_PLUGIN_VERSION,
+		// 	['in_footer' => true]
+		// );
 	}
 
 	/**
 	 * Adds options subpage to Settings.
-	 * You can add top-level pages using add_options_page().
+	 * add_options_page() is a shortcut for this exact call.
+	 * You can add top-level pages using add_menu_page().
 	 *
 	 * @access public
 	 * @since  1.0.0
@@ -87,24 +76,21 @@ class My_Plugin_Settings_Page {
 	 */
 	public function add_plugin_page() {
 
-		$page = add_submenu_page(
+		$this->page_hook = add_submenu_page(
 			// The slug name for the parent menu (or the file name
 			// of a standard WordPress admin page)
 			'options-general.php',
 			// Page Title
-			'Plugin Settings',
+			__('Plugin Settings', 'my-plugin'),
 			// Menu Title
-			'Plugin Settings',
+			__('Plugin Settings', 'my-plugin'),
 			// Capability needed to access this page
 			'manage_options',
-			// Menu Slug - Used by WP to idenify this page
+			// Menu Slug - Used by WP to identify this page
 			$this->prefix,
 			// Callback that renders page
 			[$this, 'page_render']
 		);
-
-		// Adds hook so our enqueued files load only on this page.
-		add_action('admin_print_scripts-' . $page, [$this, 'enqueuer']);
 	}
 
 	/**
@@ -115,10 +101,9 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function page_render() {
-		$this->options = get_option("{$this->prefix}_option");
 		?>
 		<div class="wrap">
-			<h2>Plugin Options</h2>
+			<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 			<form method="post" action="options.php">
 			<?php
 				// Output nonce, action, and option_page fields.
@@ -129,7 +114,7 @@ class My_Plugin_Settings_Page {
 				// This should match the page name used in add_settings_section().
 				do_settings_sections($this->prefix);
 				// Submit button
-				submit_button('Save');
+				submit_button(__('Save', 'my-plugin'));
 			?>
 			</form>
 		</div>
@@ -146,26 +131,22 @@ class My_Plugin_Settings_Page {
 	public function page_init() {
 
 		/**
-		 * Registers script for loading on this settings page.
-		 */
-		// wp_register_script(
-		// 	'my_plugin_script',
-		// 	$this->plugin_url . 'assets/my-plugin.js',
-		// 	['jquery'],
-		// 	$this->version
-		// );
-
-		/**
 		 * Registers a setting and its sanitization callback.
 		 * Defines the actual option the setting fields will be stored in.
+		 * If you rename the option, update uninstall.php to match.
 		 */
 		register_setting(
 			// A name for the options group
 			"{$this->prefix}_options_group",
 			// A name for your option
 			"{$this->prefix}_option",
-			// Callback function that sanitizes the option's value
-			[$this, 'sanitize']
+			[
+				'type'              => 'array',
+				// Callback function that sanitizes the option's value
+				'sanitize_callback' => [$this, 'sanitize'],
+				'default'           => [],
+				'show_in_rest'      => false,
+			]
 		);
 
 		/**
@@ -176,7 +157,7 @@ class My_Plugin_Settings_Page {
 			// String for use in the 'id' attribute of tags
 			'plugin_settings_section_1',
 			// Title of the section
-			'Plugin Settings Section 1',
+			__('Plugin Settings Section 1', 'my-plugin'),
 			// Function that renders the section with content
 			[$this, 'print_section_1_info'],
 			// The menu page on which to display this section
@@ -190,14 +171,16 @@ class My_Plugin_Settings_Page {
 			// String for use in the 'id' attribute of tags
 			'my_setting',
 			// Title of the field
-			'My Setting',
+			__('My Setting', 'my-plugin'),
 			// Function that fills the field with the desired inputs
 			// as part of the larger form
 			[$this, 'my_setting_callback'],
 			// The menu page on which to display this field
 			$this->prefix,
 			// The section of the settings page in which to show the box
-			'plugin_settings_section_1'
+			'plugin_settings_section_1',
+			// Wraps the field title in a <label for="my_setting">
+			['label_for' => 'my_setting']
 		);
 	}
 
@@ -227,28 +210,30 @@ class My_Plugin_Settings_Page {
 	 * @return void
 	 */
 	public function print_section_1_info() {
-		print 'This is description text for the section 1.';
+		echo '<p>' . esc_html__('This is description text for the section 1.', 'my-plugin') . '</p>';
 	}
 
 	/**
-	 * Gets the settings and print their values.
+	 * Prints the setting field.
 	 *
 	 * @access public
 	 * @since  1.0.0
 	 * @return void
 	 */
 	public function my_setting_callback() {
-
-		if (isset($this->options['my_setting'])) {
-			$my_setting = esc_attr($this->options['my_setting']);
-		} else {
-			$my_setting = '';
-		}
-
-		$output = "<input style='width: 100%;' type='text' id='my_setting' name='{$this->prefix}_option[my_setting]' value='{$my_setting}' placeholder='Enter setting value'/>";
-		$output .= '<p class="description">A description for the field (optional).</p>';
-
-		echo $output;
+		$options = get_option("{$this->prefix}_option");
+		$my_setting = $options['my_setting'] ?? '';
+		?>
+		<input
+			type="text"
+			class="large-text"
+			id="my_setting"
+			name="<?php echo esc_attr("{$this->prefix}_option[my_setting]"); ?>"
+			value="<?php echo esc_attr($my_setting); ?>"
+			placeholder="<?php esc_attr_e('Enter setting value', 'my-plugin'); ?>"
+		/>
+		<p class="description"><?php esc_html_e('A description for the field (optional).', 'my-plugin'); ?></p>
+		<?php
 	}
 }
 

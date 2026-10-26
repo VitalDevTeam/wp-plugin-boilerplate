@@ -16,23 +16,6 @@
 
 defined('ABSPATH') || exit;
 
-// Another plugin built from this boilerplate already uses these names.
-// Loading this one too would fatal on the duplicate class, so bail with
-// a notice instead.
-if (defined('MY_PLUGIN_VERSION')) {
-	add_action('admin_notices', function () {
-		printf(
-			'<div class="notice notice-error"><p>%s</p></div>',
-			esc_html(sprintf(
-				/* translators: %s: plugin file path */
-				__('%s was not loaded because another active plugin uses the same MY_PLUGIN_ names. Rename the placeholders listed in its readme.md.', 'wp-plugin-boilerplate'),
-				plugin_basename(__FILE__)
-			))
-		);
-	});
-	return;
-}
-
 // Keep in sync with the Version header above.
 define('MY_PLUGIN_VERSION', '1.0.0');
 // Resolved here so included files can live in subdirectories.
